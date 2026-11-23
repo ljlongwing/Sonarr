@@ -898,31 +898,27 @@ export const useToggleSeasonMonitored = (seriesId: number) => {
   const queryClient = useQueryClient();
 
   const { mutate, isPending, error } = useApiMutation<
-    Series,
+    Season,
     ToggleSeasonMonitoredPayload
   >({
     path: `/series/${seriesId}/season`,
     method: 'PUT',
     mutationOptions: {
-      onSuccess: (updatedSeries) => {
+      onSuccess: (updatedSeason) => {
         queryClient.setQueryData<Series[]>(['/series'], (oldSeries) => {
           if (!oldSeries) {
             return oldSeries;
           }
 
           return oldSeries.map((series) => {
-            if (series.id === updatedSeries.id) {
+            if (series.id === seriesId) {
               return {
                 ...series,
                 seasons: series.seasons.map((season) => {
-                  const updatedSeason = updatedSeries.seasons.find(
-                    (s) => s.seasonNumber === season.seasonNumber
-                  );
-
-                  if (updatedSeason) {
+                  if (season.seasonNumber === updatedSeason.seasonNumber) {
                     return {
                       ...season,
-                      ...updatedSeason,
+                      monitored: updatedSeason.monitored,
                     };
                   }
 
@@ -933,6 +929,10 @@ export const useToggleSeasonMonitored = (seriesId: number) => {
 
             return series;
           });
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: ['/episode', { seriesId }],
         });
       },
     },
